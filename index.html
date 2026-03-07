@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tempo em Portugal - Próximas 24h</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      min-height: 100vh;
+      color: #fff;
+      padding: 20px;
+    }
+
+    header {
+      text-align: center;
+      padding: 30px 0 20px;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    header p {
+      color: #aad4f5;
+      margin-top: 6px;
+      font-size: 0.95rem;
+    }
+
+    .city-selector {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin: 20px auto;
+      max-width: 800px;
+    }
+
+    .city-btn {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #fff;
+      padding: 8px 20px;
+      border-radius: 30px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+
+    .city-btn:hover { background: rgba(255,255,255,0.2); }
+
+    .city-btn.active {
+      background: #1a8cff;
+      border-color: #1a8cff;
+      font-weight: 600;
+    }
+
+    .current-card {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 20px;
+      max-width: 800px;
+      margin: 0 auto 30px;
+      padding: 30px;
+      display: flex;
+      align-items: center;
+      gap: 30px;
+      flex-wrap: wrap;
+    }
+
+    .current-icon { font-size: 5rem; line-height: 1; }
+
+    .current-info { flex: 1; min-width: 180px; }
+
+    .current-info .city-name {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .current-info .temp-main {
+      font-size: 3.5rem;
+      font-weight: 300;
+      line-height: 1;
+    }
+
+    .current-info .description {
+      color: #aad4f5;
+      font-size: 1rem;
+      margin-top: 4px;
+      text-transform: capitalize;
+    }
+
+    .current-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      min-width: 200px;
+    }
+
+    .detail-item {
+      background: rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 12px 16px;
+    }
+
+    .detail-item .label {
+      font-size: 0.75rem;
+      color: #aad4f5;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .detail-item .value {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    .section-title {
+      text-align: center;
+      font-size: 1rem;
+      color: #aad4f5;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 14px;
+    }
+
+    .hourly-container {
+      max-width: 800px;
+      margin: 0 auto 30px;
+    }
+
+    .hourly-scroll {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.3) transparent;
+    }
+
+    .hourly-scroll::-webkit-scrollbar { height: 4px; }
+    .hourly-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 4px; }
+
+    .hour-card {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 14px 12px;
+      text-align: center;
+      min-width: 78px;
+      flex-shrink: 0;
+      transition: background 0.2s;
+    }
+
+    .hour-card.now {
+      background: rgba(26,140,255,0.35);
+      border-color: #1a8cff;
+    }
+
+    .hour-card .hour { font-size: 0.8rem; color: #aad4f5; }
+    .hour-card .h-icon { font-size: 1.6rem; margin: 6px 0; }
+    .hour-card .h-temp { font-size: 1rem; font-weight: 600; }
+    .hour-card .h-rain {
+      font-size: 0.75rem;
+      color: #7ec8f5;
+      margin-top: 4px;
+    }
+
+    .chart-container {
+      max-width: 800px;
+      margin: 0 auto 30px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 20px;
+    }
+
+    canvas { width: 100% !important; }
+
+    .loading {
+      text-align: center;
+      padding: 60px;
+      color: #aad4f5;
+      font-size: 1.1rem;
+    }
+
+    .error-msg {
+      text-align: center;
+      padding: 40px;
+      color: #ff8080;
+      background: rgba(255,80,80,0.1);
+      border-radius: 16px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    footer {
+      text-align: center;
+      color: rgba(255,255,255,0.4);
+      font-size: 0.8rem;
+      margin-top: 20px;
+      padding-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>&#127810; Tempo em Portugal</h1>
+  <p>Previsão para as próximas 24 horas</p>
+</header>
+
+<div class="city-selector" id="citySelector"></div>
+
+<div id="app">
+  <div class="loading">A carregar dados meteorológicos...</div>
+</div>
+
+<footer>Dados: <a href="https://open-meteo.com/" style="color:#aad4f5">Open-Meteo</a> &bull; Atualizado automaticamente</footer>
+
+<script>
+const CITIES = [
+  { name: 'Lisboa',    lat: 38.7167, lon: -9.1333 },
+  { name: 'Porto',     lat: 41.1496, lon: -8.6109 },
+  { name: 'Faro',      lat: 37.0194, lon: -7.9322 },
+  { name: 'Coimbra',   lat: 40.2033, lon: -8.4103 },
+  { name: 'Braga',     lat: 41.5518, lon: -8.4229 },
+  { name: 'Évora',     lat: 38.5667, lon: -7.9000 },
+  { name: 'Funchal',   lat: 32.6669, lon: -16.9241 },
+  { name: 'Ponta Delgada', lat: 37.7394, lon: -25.6688 },
+];
+
+const WMO_CODES = {
+  0:  { label: 'Céu limpo',         icon: '☀️' },
+  1:  { label: 'Maioritariamente limpo', icon: '🌤️' },
+  2:  { label: 'Parcialmente nublado',   icon: '⛅' },
+  3:  { label: 'Nublado',           icon: '☁️' },
+  45: { label: 'Nevoeiro',          icon: '🌫️' },
+  48: { label: 'Nevoeiro gelado',   icon: '🌫️' },
+  51: { label: 'Chuvisco leve',     icon: '🌦️' },
+  53: { label: 'Chuvisco moderado', icon: '🌦️' },
+  55: { label: 'Chuvisco intenso',  icon: '🌧️' },
+  61: { label: 'Chuva leve',        icon: '🌧️' },
+  63: { label: 'Chuva moderada',    icon: '🌧️' },
+  65: { label: 'Chuva intensa',     icon: '🌧️' },
+  71: { label: 'Neve leve',         icon: '🌨️' },
+  73: { label: 'Neve moderada',     icon: '❄️' },
+  75: { label: 'Neve intensa',      icon: '❄️' },
+  80: { label: 'Aguaceiros leves',  icon: '🌦️' },
+  81: { label: 'Aguaceiros moderados', icon: '🌧️' },
+  82: { label: 'Aguaceiros intensos',  icon: '⛈️' },
+  95: { label: 'Trovoada',          icon: '⛈️' },
+  96: { label: 'Trovoada c/ granizo', icon: '⛈️' },
+  99: { label: 'Trovoada c/ granizo forte', icon: '⛈️' },
+};
+
+function wmo(code) {
+  return WMO_CODES[code] || { label: 'Desconhecido', icon: '🌡️' };
+}
+
+function windDir(deg) {
+  const dirs = ['N','NE','E','SE','S','SO','O','NO'];
+  return dirs[Math.round(deg / 45) % 8];
+}
+
+let currentCity = CITIES[0];
+let chartInstance = null;
+
+// Build city buttons
+const selector = document.getElementById('citySelector');
+CITIES.forEach((city, i) => {
+  const btn = document.createElement('button');
+  btn.className = 'city-btn' + (i === 0 ? ' active' : '');
+  btn.textContent = city.name;
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.city-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentCity = city;
+    loadWeather(city);
+  });
+  selector.appendChild(btn);
+});
+
+async function loadWeather(city) {
+  const app = document.getElementById('app');
+  app.innerHTML = '<div class="loading">A carregar dados para ' + city.name + '...</div>';
+
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}` +
+      `&hourly=temperature_2m,precipitation_probability,precipitation,weathercode,windspeed_10m,winddirection_10m,relativehumidity_2m` +
+      `&current_weather=true&timezone=Europe%2FLisbon&forecast_days=2`;
+
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Erro ao obter dados');
+    const data = await res.json();
+    renderWeather(city, data);
+  } catch (e) {
+    app.innerHTML = `<div class="error-msg">Erro ao carregar dados meteorológicos.<br><small>${e.message}</small></div>`;
+  }
+}
+
+function renderWeather(city, data) {
+  const app = document.getElementById('app');
+  const now = new Date();
+  const cw = data.current_weather;
+  const hourlyTimes = data.hourly.time.map(t => new Date(t));
+  const nowIdx = hourlyTimes.findIndex(t => t >= now);
+  const startIdx = nowIdx < 0 ? 0 : nowIdx;
+  const endIdx = startIdx + 24;
+
+  const slice = (arr) => arr.slice(startIdx, endIdx);
+  const times   = slice(hourlyTimes);
+  const temps   = slice(data.hourly.temperature_2m);
+  const precip  = slice(data.hourly.precipitation);
+  const precipP = slice(data.hourly.precipitation_probability);
+  const codes   = slice(data.hourly.weathercode);
+  const wind    = slice(data.hourly.windspeed_10m);
+  const windD   = slice(data.hourly.winddirection_10m);
+  const humidity= slice(data.hourly.relativehumidity_2m);
+
+  const curCode  = codes[0] ?? cw.weathercode;
+  const curInfo  = wmo(curCode);
+  const curTemp  = temps[0] ?? cw.temperature;
+  const curWind  = wind[0] ?? cw.windspeed;
+  const curWindD = windD[0] ?? cw.winddirection;
+  const curHum   = humidity[0] ?? '--';
+  const curRainP = precipP[0] ?? '--';
+
+  // Hourly cards HTML
+  const hourlyHTML = times.map((t, i) => {
+    const isNow = i === 0;
+    const h = t.getHours().toString().padStart(2,'0') + ':00';
+    const info = wmo(codes[i]);
+    return `
+      <div class="hour-card ${isNow ? 'now' : ''}">
+        <div class="hour">${isNow ? 'Agora' : h}</div>
+        <div class="h-icon">${info.icon}</div>
+        <div class="h-temp">${Math.round(temps[i])}°C</div>
+        <div class="h-rain">${precipP[i]}%</div>
+      </div>`;
+  }).join('');
+
+  app.innerHTML = `
+    <div class="current-card">
+      <div class="current-icon">${curInfo.icon}</div>
+      <div class="current-info">
+        <div class="city-name">${city.name}</div>
+        <div class="temp-main">${Math.round(curTemp)}°C</div>
+        <div class="description">${curInfo.label}</div>
+      </div>
+      <div class="current-details">
+        <div class="detail-item">
+          <div class="label">Vento</div>
+          <div class="value">${Math.round(curWind)} km/h ${windDir(curWindD)}</div>
+        </div>
+        <div class="detail-item">
+          <div class="label">Humidade</div>
+          <div class="value">${curHum}%</div>
+        </div>
+        <div class="detail-item">
+          <div class="label">Precipitação</div>
+          <div class="value">${precipP[0]}%</div>
+        </div>
+        <div class="detail-item">
+          <div class="label">Máx / Mín</div>
+          <div class="value">${Math.round(Math.max(...temps))}° / ${Math.round(Math.min(...temps))}°</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hourly-container">
+      <div class="section-title">Hora a hora</div>
+      <div class="hourly-scroll">${hourlyHTML}</div>
+    </div>
+
+    <div class="chart-container">
+      <div class="section-title">Temperatura &amp; Precipitação</div>
+      <canvas id="weatherChart" height="120"></canvas>
+    </div>
+  `;
+
+  drawChart(times, temps, precipP);
+}
+
+function drawChart(times, temps, precipP) {
+  const canvas = document.getElementById('weatherChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  const labels = times.map((t, i) => {
+    if (i === 0) return 'Agora';
+    return t.getHours().toString().padStart(2,'0') + 'h';
+  });
+
+  const W = canvas.offsetWidth || 760;
+  const H = 160;
+  canvas.width = W;
+  canvas.height = H;
+
+  const pad = { top: 20, right: 20, bottom: 30, left: 40 };
+  const chartW = W - pad.left - pad.right;
+  const chartH = H - pad.top - pad.bottom;
+  const n = temps.length;
+
+  const minT = Math.min(...temps) - 2;
+  const maxT = Math.max(...temps) + 2;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  ctx.lineWidth = 1;
+  for (let g = 0; g <= 4; g++) {
+    const y = pad.top + (chartH / 4) * g;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + chartW, y); ctx.stroke();
+  }
+
+  // Precipitation bars
+  const barW = (chartW / n) * 0.6;
+  precipP.forEach((p, i) => {
+    const x = pad.left + (i / (n - 1)) * chartW;
+    const barH = (p / 100) * chartH;
+    ctx.fillStyle = 'rgba(100,180,255,0.35)';
+    ctx.fillRect(x - barW / 2, pad.top + chartH - barH, barW, barH);
+  });
+
+  // Temperature line
+  ctx.beginPath();
+  ctx.strokeStyle = '#ffcc44';
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
+  temps.forEach((t, i) => {
+    const x = pad.left + (i / (n - 1)) * chartW;
+    const y = pad.top + ((maxT - t) / (maxT - minT)) * chartH;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // Temperature dots + labels
+  temps.forEach((t, i) => {
+    const x = pad.left + (i / (n - 1)) * chartW;
+    const y = pad.top + ((maxT - t) / (maxT - minT)) * chartH;
+    ctx.beginPath();
+    ctx.arc(x, y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffcc44';
+    ctx.fill();
+    if (i % 3 === 0) {
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.font = '11px Segoe UI';
+      ctx.textAlign = 'center';
+      ctx.fillText(Math.round(t) + '°', x, y - 8);
+    }
+  });
+
+  // X-axis labels
+  ctx.fillStyle = 'rgba(170,212,245,0.8)';
+  ctx.font = '10px Segoe UI';
+  ctx.textAlign = 'center';
+  labels.forEach((lbl, i) => {
+    if (i % 3 === 0) {
+      const x = pad.left + (i / (n - 1)) * chartW;
+      ctx.fillText(lbl, x, H - 8);
+    }
+  });
+
+  // Y-axis temp labels
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.textAlign = 'right';
+  for (let g = 0; g <= 4; g++) {
+    const val = maxT - ((maxT - minT) / 4) * g;
+    const y = pad.top + (chartH / 4) * g;
+    ctx.fillText(Math.round(val) + '°', pad.left - 5, y + 4);
+  }
+}
+
+// Initial load
+loadWeather(currentCity);
+</script>
+</body>
+</html>
