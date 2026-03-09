@@ -99,9 +99,9 @@
 
     .current-details {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 14px;
-      min-width: 200px;
+      min-width: 280px;
     }
 
     .detail-item {
@@ -172,6 +172,11 @@
       font-size: 0.75rem;
       color: #7ec8f5;
       margin-top: 4px;
+    }
+    .hour-card .h-gust {
+      font-size: 0.72rem;
+      color: #b0d4f1;
+      margin-top: 2px;
     }
 
     .chart-container {
@@ -295,7 +300,7 @@ async function loadWeather(city) {
 
   try {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}` +
-      `&hourly=temperature_2m,precipitation_probability,precipitation,weathercode,windspeed_10m,winddirection_10m,relativehumidity_2m` +
+      `&hourly=temperature_2m,precipitation_probability,precipitation,weathercode,windspeed_10m,windgusts_10m,winddirection_10m,relativehumidity_2m` +
       `&current_weather=true&timezone=Europe%2FLisbon&forecast_days=2`;
 
     const res = await fetch(url);
@@ -323,6 +328,7 @@ function renderWeather(city, data) {
   const precipP = slice(data.hourly.precipitation_probability);
   const codes   = slice(data.hourly.weathercode);
   const wind    = slice(data.hourly.windspeed_10m);
+  const gusts   = slice(data.hourly.windgusts_10m);
   const windD   = slice(data.hourly.winddirection_10m);
   const humidity= slice(data.hourly.relativehumidity_2m);
 
@@ -330,6 +336,7 @@ function renderWeather(city, data) {
   const curInfo  = wmo(curCode);
   const curTemp  = temps[0] ?? cw.temperature;
   const curWind  = wind[0] ?? cw.windspeed;
+  const curGusts = gusts[0] ?? '--';
   const curWindD = windD[0] ?? cw.winddirection;
   const curHum   = humidity[0] ?? '--';
   const curRainP = precipP[0] ?? '--';
@@ -345,6 +352,7 @@ function renderWeather(city, data) {
         <div class="h-icon">${info.icon}</div>
         <div class="h-temp">${Math.round(temps[i])}°C</div>
         <div class="h-rain">${precipP[i]}%</div>
+        <div class="h-gust">💨 ${Math.round(gusts[i])} km/h</div>
       </div>`;
   }).join('');
 
@@ -360,6 +368,10 @@ function renderWeather(city, data) {
         <div class="detail-item">
           <div class="label">Vento</div>
           <div class="value">${Math.round(curWind)} km/h ${windDir(curWindD)}</div>
+        </div>
+        <div class="detail-item">
+          <div class="label">Rajadas</div>
+          <div class="value">${Math.round(curGusts)} km/h</div>
         </div>
         <div class="detail-item">
           <div class="label">Humidade</div>
