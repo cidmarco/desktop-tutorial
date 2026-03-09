@@ -397,9 +397,15 @@ function renderWeather(city, data) {
       <div class="section-title">Temperatura &amp; Precipitação</div>
       <canvas id="weatherChart" height="120"></canvas>
     </div>
+
+    <div class="chart-container">
+      <div class="section-title">Vento &amp; Rajadas</div>
+      <canvas id="windChart" height="120"></canvas>
+    </div>
   `;
 
   drawChart(times, temps, precipP);
+  drawWindChart(times, wind, gusts);
 }
 
 function drawChart(times, temps, precipP) {
@@ -491,6 +497,125 @@ function drawChart(times, temps, precipP) {
     const y = pad.top + (chartH / 4) * g;
     ctx.fillText(Math.round(val) + '°', pad.left - 5, y + 4);
   }
+}
+
+function drawWindChart(times, wind, gusts) {
+  const canvas = document.getElementById('windChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  const labels = times.map((t, i) => {
+    if (i === 0) return 'Agora';
+    return t.getHours().toString().padStart(2,'0') + 'h';
+  });
+
+  const W = canvas.offsetWidth || 760;
+  const H = 160;
+  canvas.width = W;
+  canvas.height = H;
+
+  const pad = { top: 20, right: 20, bottom: 30, left: 44 };
+  const chartW = W - pad.left - pad.right;
+  const chartH = H - pad.top - pad.bottom;
+  const n = wind.length;
+
+  const maxV = Math.max(...gusts) + 5;
+  const minV = 0;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  ctx.lineWidth = 1;
+  for (let g = 0; g <= 4; g++) {
+    const y = pad.top + (chartH / 4) * g;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + chartW, y); ctx.stroke();
+  }
+
+  // Gusts area fill
+  ctx.beginPath();
+  gusts.forEach((v, i) => {
+    const x = pad.left + (i / (n - 1)) * chartW;
+    const y = pad.top + ((maxV - v) / (maxV - minV)) * chartH;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.lineTo(pad.left + chartW, pad.top + chartH);
+  ctx.lineTo(pad.left, pad.top + chartH);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(180,120,255,0.15)';
+  ctx.fill();
+
+  // Gusts line
+  ctx.beginPath();
+  ctx.strokeStyle = 'rgba(200,140,255,0.8)';
+  ctx.lineWidth = 1.8;
+  ctx.setLineDash([5, 3]);
+  ctx.lineJoin = 'round';
+  gusts.forEach((v, i) => {
+    const x = pad.left + (i / (n - 1)) * chartW;
+    const y = pad.top + ((maxV - v) / (maxV - minV)) * chartH;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Wind speed line
+  ctx.beginPath();
+  ctx.strokeStyle = '#4fc3f7';
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
+  wind.forEach((v, i) => {
+    const x = pad.left + (i / (n - 1)) * chartW;
+    const y = pad.top + ((maxV - v) / (maxV - minV)) * chartH;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // Wind speed dots + labels
+  wind.forEach((v, i) => {
+    const x = pad.left + (i / (n - 1)) * chartW;
+    const y = pad.top + ((maxV - v) / (maxV - minV)) * chartH;
+    ctx.beginPath();
+    ctx.arc(x, y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#4fc3f7';
+    ctx.fill();
+    if (i % 3 === 0) {
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.font = '11px Segoe UI';
+      ctx.textAlign = 'center';
+      ctx.fillText(Math.round(v), x, y - 8);
+    }
+  });
+
+  // X-axis labels
+  ctx.fillStyle = 'rgba(170,212,245,0.8)';
+  ctx.font = '10px Segoe UI';
+  ctx.textAlign = 'center';
+  labels.forEach((lbl, i) => {
+    if (i % 3 === 0) {
+      const x = pad.left + (i / (n - 1)) * chartW;
+      ctx.fillText(lbl, x, H - 8);
+    }
+  });
+
+  // Y-axis labels
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.textAlign = 'right';
+  for (let g = 0; g <= 4; g++) {
+    const val = maxV - ((maxV - minV) / 4) * g;
+    const y = pad.top + (chartH / 4) * g;
+    ctx.fillText(Math.round(val), pad.left - 5, y + 4);
+  }
+
+  // Legend
+  ctx.font = '10px Segoe UI';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#4fc3f7';
+  ctx.fillRect(pad.left, 4, 18, 3);
+  ctx.fillText('Vento (km/h)', pad.left + 22, 10);
+  ctx.fillStyle = 'rgba(200,140,255,0.8)';
+  ctx.fillRect(pad.left + 110, 4, 18, 3);
+  ctx.fillText('Rajadas (km/h)', pad.left + 132, 10);
 }
 
 // Initial load
